@@ -23,6 +23,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".PersonActivity"
+            android:exported="false"
+            android:label="Person Activity"
+            android:theme="@style/Theme.HiltDemo" />
     </application>
 
 </manifest>
