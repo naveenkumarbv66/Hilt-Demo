@@ -1,6 +1,6 @@
 # Hilt Demo Android App
 
-A comprehensive Android application demonstrating Hilt dependency injection, MVVM architecture, networking with Retrofit, WorkManager, and Jetpack Compose UI.
+A comprehensive Android application demonstrating Hilt dependency injection, MVVM architecture, networking with Retrofit, WorkManager, secure data storage with DataStore, and Jetpack Compose UI.
 
 ## Overview
 
@@ -9,6 +9,7 @@ This project showcases modern Android development practices including:
 - **MVVM Pattern** with ViewModels and StateFlow
 - **Networking** with Retrofit, OkHttp, and JSON parsing
 - **Background Processing** with WorkManager
+- **Secure Data Storage** with DataStore and EncryptedSharedPreferences
 - **Jetpack Compose UI** with Material3 design
 - **Repository Pattern** for data management
 
@@ -33,6 +34,13 @@ This project showcases modern Android development practices including:
 - **Retry Policies**: Automatic retry on failure
 - **Periodic Sync**: Scheduled background operations
 
+### 🔐 **Secure Data Storage**
+- **DataStore Integration**: Modern preferences storage
+- **Encrypted Storage**: AES256 encryption for sensitive data
+- **Dual Storage System**: Regular DataStore + EncryptedSharedPreferences
+- **Reactive Updates**: Real-time UI updates with Flow
+- **Simple API**: Easy-to-use utility classes
+
 ### 🎨 **Modern UI**
 - **Jetpack Compose**: Declarative UI toolkit
 - **Material3 Design**: Modern design system
@@ -47,6 +55,7 @@ app/
 │   ├── MainActivity.kt              # Main activity with navigation
 │   ├── PersonActivity.kt            # Counter demo with ViewModel
 │   ├── NetworkActivity.kt           # Comprehensive networking demo
+│   ├── DataStoreActivity.kt         # Secure data storage demo
 │   ├── HiltDemoApplication.kt       # Application class with @HiltAndroidApp
 │   ├── service/
 │   │   └── GreetingService.kt       # Service class for dependency injection
@@ -58,6 +67,9 @@ app/
 │   │   │   └── ApiService.kt        # Retrofit API service interface
 │   │   └── repository/
 │   │       └── NetworkRepository.kt # Repository for network operations
+│   ├── datastore/
+│   │   ├── SecureDataStore.kt       # Hilt-managed secure data storage
+│   │   └── DataStoreUtils.kt        # Utility class for easy access
 │   ├── di/
 │   │   └── NetworkModule.kt         # Hilt network dependencies
 │   ├── viewmodel/
@@ -153,6 +165,35 @@ class NetworkWorker @AssistedInject constructor(
 - Hilt integration for dependency injection
 - Network constraints and retry policies
 
+### 7. **SecureDataStore** (Secure Data Storage)
+```kotlin
+@Singleton
+class SecureDataStore @Inject constructor(
+    @ApplicationContext private val context: Context
+) {
+    suspend fun writeString(key: String, value: String, isSensitive: Boolean = false)
+    fun readString(key: String, defaultValue: String = "", isSensitive: Boolean = false): Flow<String>
+    suspend fun deleteString(key: String, isSensitive: Boolean = false)
+    // ... more operations
+}
+```
+- Hilt-managed singleton for secure data operations
+- Dual storage: DataStore + EncryptedSharedPreferences
+- AES256 encryption for sensitive data
+- Reactive updates with Flow
+
+### 8. **DataStoreUtils** (Simple Data Access)
+```kotlin
+object DataStoreUtils {
+    suspend fun writeString(context: Context, key: String, value: String, encrypted: Boolean = false)
+    fun readString(context: Context, key: String, defaultValue: String = "", encrypted: Boolean = false): Flow<String>
+    // ... more operations
+}
+```
+- Static utility class for easy access anywhere
+- No dependency injection required
+- Same security features as SecureDataStore
+
 ## Dependencies
 
 The project uses the following key dependencies:
@@ -174,6 +215,10 @@ The project uses the following key dependencies:
 ### **Background Processing**
 - **WorkManager**: `androidx.work:work-runtime-ktx:2.9.0`
 - **Hilt Work**: `androidx.hilt:hilt-work:2.48`
+
+### **Data Storage**
+- **DataStore Preferences**: `androidx.datastore:datastore-preferences:1.0.0`
+- **Security Crypto**: `androidx.security:security-crypto:1.1.0-alpha06`
 
 ### **Coroutines**
 - **Kotlinx Coroutines Core**: `org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3`
@@ -218,6 +263,7 @@ The project uses the following key dependencies:
 - **MainActivity**: Entry point with navigation to other activities
 - **PersonActivity**: Demonstrates ViewModel with auto-incrementing counter
 - **NetworkActivity**: Comprehensive networking demo with tabbed interface
+- **DataStoreActivity**: Secure data storage demo with encryption toggle
 
 ### **3. Dependency Injection Flow**
 - Hilt creates and manages all service instances
@@ -234,6 +280,12 @@ The project uses the following key dependencies:
 - **StateFlow**: Reactive state management updates UI automatically
 - **Compose UI**: Declarative UI responds to state changes
 - **Real-time Feedback**: Loading states, success/error messages
+
+### **6. Data Storage Operations**
+- **Secure Storage**: AES256 encryption for sensitive data
+- **Reactive Updates**: Real-time UI updates with Flow
+- **Dual Storage**: Regular DataStore + EncryptedSharedPreferences
+- **Simple Access**: Utility classes for easy data operations
 
 ## Key Hilt Annotations
 
@@ -272,6 +324,14 @@ The project uses the following key dependencies:
 - Input forms for all operations
 - Scrollable results with data preview
 
+### **DataStoreActivity**
+- **Secure Data Storage**: Test encrypted and regular data storage
+- **User Data Management**: Save/read user information securely
+- **Encryption Toggle**: Switch between encrypted and regular storage
+- **Real-time Updates**: Live display of stored data
+- **Data Operations**: Save, read, delete, and clear operations
+- **Status Feedback**: Success/error messages for all operations
+
 ## API Testing Features
 
 ### **GET Operations**
@@ -297,6 +357,22 @@ The project uses the following key dependencies:
 - Image upload with MultipartBody
 - File upload with custom descriptions
 - Progress tracking and error handling
+
+## Data Storage Features
+
+### **Secure Data Operations**
+- **Encrypted Storage**: AES256 encryption for sensitive data
+- **Regular Storage**: Standard DataStore for non-sensitive data
+- **Data Types**: String, Int, Boolean, Long support
+- **Reactive Updates**: Real-time UI updates with Flow
+- **Simple API**: Easy-to-use utility classes
+
+### **Data Management**
+- **User Data**: Name, email, phone, age storage
+- **App Settings**: JSON settings and preferences
+- **Login Status**: Authentication state management
+- **Timestamps**: Last login and sync times
+- **Clear Operations**: Delete individual keys or all data
 
 ## Usage Examples
 
@@ -340,6 +416,22 @@ class MyViewModel @Inject constructor(
 }
 ```
 
+### **Secure Data Storage**
+```kotlin
+// Using SecureDataStore with Hilt
+@Inject lateinit var secureDataStore: SecureDataStore
+
+// Save user data securely
+secureDataStore.saveUserData("John", "john@example.com", "1234567890", 25, isSensitive = true)
+
+// Read data reactively
+val userName by secureDataStore.getUserName().collectAsState(initial = "")
+
+// Using DataStoreUtils (no dependency injection needed)
+DataStoreUtils.saveUserToken(context, "jwt_token", encrypted = true)
+val token by DataStoreUtils.getUserToken(context, encrypted = true).collectAsState(initial = "")
+```
+
 ## Technical Highlights
 
 - **Clean Architecture**: Proper separation of concerns
@@ -347,6 +439,7 @@ class MyViewModel @Inject constructor(
 - **Reactive Programming**: StateFlow for UI updates
 - **Error Handling**: Comprehensive error management
 - **Background Processing**: Reliable WorkManager integration
+- **Secure Data Storage**: AES256 encryption with DataStore
 - **Type Safety**: Kotlin generics and sealed classes
 - **Modern UI**: Jetpack Compose with Material3
 

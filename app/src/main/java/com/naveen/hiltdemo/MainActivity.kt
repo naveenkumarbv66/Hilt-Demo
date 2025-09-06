@@ -46,6 +46,9 @@ class MainActivity : ComponentActivity() {
                         onNavigateToNetwork = {
                             startActivity(Intent(this@MainActivity, NetworkActivity::class.java))
                         },
+                        onNavigateToDataStore = {
+                            startActivity(Intent(this@MainActivity, DataStoreActivity::class.java))
+                        },
                         modifier = Modifier.padding(innerPadding)
                     )
                 }
@@ -59,6 +62,7 @@ fun GreetingScreen(
     greetingService: GreetingService,
     onNavigateToPerson: () -> Unit,
     onNavigateToNetwork: () -> Unit,
+    onNavigateToDataStore: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -96,6 +100,13 @@ fun GreetingScreen(
         ) {
             Text("Go to Network Activity")
         }
+        
+        Button(
+            onClick = onNavigateToDataStore,
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text("Go to DataStore Activity")
+        }
     }
 }
 
@@ -111,7 +122,8 @@ fun GreetingScreenPreview() {
         GreetingScreen(
             greetingService = mockService,
             onNavigateToPerson = { /* Preview doesn't need navigation */ },
-            onNavigateToNetwork = { /* Preview doesn't need navigation */ }
+            onNavigateToNetwork = { /* Preview doesn't need navigation */ },
+            onNavigateToDataStore = { /* Preview doesn't need navigation */ }
         )
     }
 }

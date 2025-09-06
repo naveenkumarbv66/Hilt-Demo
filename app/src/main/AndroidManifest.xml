@@ -36,6 +36,11 @@
             android:exported="false"
             android:label="Network Activity"
             android:theme="@style/Theme.HiltDemo" />
+        <activity
+            android:name=".DataStoreActivity"
+            android:exported="false"
+            android:label="DataStore Activity"
+            android:theme="@style/Theme.HiltDemo" />
     </application>
 
 </manifest>

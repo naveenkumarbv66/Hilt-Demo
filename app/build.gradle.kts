@@ -55,6 +55,7 @@ dependencies {
     // Hilt dependencies
     implementation(libs.hilt.android)
     implementation(libs.hilt.navigation.compose)
+    implementation(libs.androidx.datastore.core.android)
     kapt(libs.hilt.compiler)
     
     // ViewModel dependencies
@@ -75,6 +76,10 @@ dependencies {
     // Coroutines dependencies
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.android)
+    
+    // DataStore dependencies
+    implementation(libs.datastore.preferences)
+    implementation(libs.security.crypto)
     
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
