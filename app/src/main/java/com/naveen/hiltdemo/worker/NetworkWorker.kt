@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import androidx.work.workDataOf
 import com.naveen.hiltdemo.data.repository.NetworkRepository
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
@@ -22,18 +23,64 @@ class NetworkWorker @AssistedInject constructor(
             when (operation) {
                 "get_users" -> {
                     val result = networkRepository.getUsers()
-                    if (result is com.naveen.hiltdemo.data.model.NetworkResult.Success) {
-                        Result.success()
-                    } else {
-                        Result.failure()
+                    when (result) {
+                        is com.naveen.hiltdemo.data.model.NetworkResult.Success -> {
+                            Result.success(
+                                workDataOf(
+                                    "operation" to operation,
+                                    "success_message" to "Users loaded successfully (${result.data.size} users)",
+                                    "data_count" to result.data.size
+                                )
+                            )
+                        }
+                        is com.naveen.hiltdemo.data.model.NetworkResult.Error -> {
+                            Result.failure(
+                                workDataOf(
+                                    "operation" to operation,
+                                    "error_message" to result.message,
+                                    "error_code" to result.code
+                                )
+                            )
+                        }
+                        is com.naveen.hiltdemo.data.model.NetworkResult.Loading -> {
+                            Result.failure(
+                                workDataOf(
+                                    "operation" to operation,
+                                    "error_message" to "Unexpected loading state"
+                                )
+                            )
+                        }
                     }
                 }
                 "get_posts" -> {
                     val result = networkRepository.getPosts()
-                    if (result is com.naveen.hiltdemo.data.model.NetworkResult.Success) {
-                        Result.success()
-                    } else {
-                        Result.failure()
+                    when (result) {
+                        is com.naveen.hiltdemo.data.model.NetworkResult.Success -> {
+                            Result.success(
+                                workDataOf(
+                                    "operation" to operation,
+                                    "success_message" to "Posts loaded successfully (${result.data.size} posts)",
+                                    "data_count" to result.data.size
+                                )
+                            )
+                        }
+                        is com.naveen.hiltdemo.data.model.NetworkResult.Error -> {
+                            Result.failure(
+                                workDataOf(
+                                    "operation" to operation,
+                                    "error_message" to result.message,
+                                    "error_code" to result.code
+                                )
+                            )
+                        }
+                        is com.naveen.hiltdemo.data.model.NetworkResult.Loading -> {
+                            Result.failure(
+                                workDataOf(
+                                    "operation" to operation,
+                                    "error_message" to "Unexpected loading state"
+                                )
+                            )
+                        }
                     }
                 }
                 "create_user" -> {
@@ -48,10 +95,34 @@ class NetworkWorker @AssistedInject constructor(
                     )
                     
                     val result = networkRepository.createUser(userRequest)
-                    if (result is com.naveen.hiltdemo.data.model.NetworkResult.Success) {
-                        Result.success()
-                    } else {
-                        Result.failure()
+                    when (result) {
+                        is com.naveen.hiltdemo.data.model.NetworkResult.Success -> {
+                            Result.success(
+                                workDataOf(
+                                    "operation" to operation,
+                                    "success_message" to "User created successfully: ${result.data.name}",
+                                    "user_name" to result.data.name,
+                                    "user_email" to result.data.email
+                                )
+                            )
+                        }
+                        is com.naveen.hiltdemo.data.model.NetworkResult.Error -> {
+                            Result.failure(
+                                workDataOf(
+                                    "operation" to operation,
+                                    "error_message" to result.message,
+                                    "error_code" to result.code
+                                )
+                            )
+                        }
+                        is com.naveen.hiltdemo.data.model.NetworkResult.Loading -> {
+                            Result.failure(
+                                workDataOf(
+                                    "operation" to operation,
+                                    "error_message" to "Unexpected loading state"
+                                )
+                            )
+                        }
                     }
                 }
                 "create_post" -> {
@@ -70,16 +141,53 @@ class NetworkWorker @AssistedInject constructor(
                     )
                     
                     val result = networkRepository.createPost(postRequest)
-                    if (result is com.naveen.hiltdemo.data.model.NetworkResult.Success) {
-                        Result.success()
-                    } else {
-                        Result.failure()
+                    when (result) {
+                        is com.naveen.hiltdemo.data.model.NetworkResult.Success -> {
+                            Result.success(
+                                workDataOf(
+                                    "operation" to operation,
+                                    "success_message" to "Post created successfully: ${result.data.title}",
+                                    "post_title" to result.data.title,
+                                    "post_id" to result.data.id
+                                )
+                            )
+                        }
+                        is com.naveen.hiltdemo.data.model.NetworkResult.Error -> {
+                            Result.failure(
+                                workDataOf(
+                                    "operation" to operation,
+                                    "error_message" to result.message,
+                                    "error_code" to result.code
+                                )
+                            )
+                        }
+                        is com.naveen.hiltdemo.data.model.NetworkResult.Loading -> {
+                            Result.failure(
+                                workDataOf(
+                                    "operation" to operation,
+                                    "error_message" to "Unexpected loading state"
+                                )
+                            )
+                        }
                     }
                 }
-                else -> Result.failure()
+                else -> {
+                    Result.failure(
+                        workDataOf(
+                            "operation" to operation,
+                            "error_message" to "Unknown operation: $operation"
+                        )
+                    )
+                }
             }
         } catch (e: Exception) {
-            Result.failure()
+            Result.failure(
+                workDataOf(
+                    "operation" to (inputData.getString("operation") ?: "unknown"),
+                    "error_message" to (e.message ?: "Unknown exception occurred"),
+                    "exception_type" to e.javaClass.simpleName
+                )
+            )
         }
     }
 }

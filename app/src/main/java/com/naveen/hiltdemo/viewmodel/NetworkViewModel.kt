@@ -5,11 +5,15 @@ import androidx.lifecycle.viewModelScope
 import com.naveen.hiltdemo.data.model.*
 import com.naveen.hiltdemo.data.repository.NetworkRepository
 import com.naveen.hiltdemo.worker.WorkManagerHelper
+import com.naveen.hiltdemo.worker.WorkResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import java.util.UUID
 import javax.inject.Inject
 
 @HiltViewModel
@@ -38,6 +42,13 @@ class NetworkViewModel @Inject constructor(
     // Network call results
     private val _lastApiResult = MutableStateFlow<String>("")
     val lastApiResult: StateFlow<String> = _lastApiResult.asStateFlow()
+    
+    // WorkManager state
+    private val _workManagerState = MutableStateFlow<NetworkState>(NetworkState.Idle)
+    val workManagerState: StateFlow<NetworkState> = _workManagerState.asStateFlow()
+    
+    // Current work ID being observed
+    private var currentWorkId: UUID? = null
     
     // GET Operations
     fun getUsers() {
@@ -196,23 +207,43 @@ class NetworkViewModel @Inject constructor(
     
     // WorkManager Operations
     fun scheduleGetUsersWork() {
-        workManagerHelper.scheduleGetUsersWork()
+        val workId = workManagerHelper.scheduleGetUsersWork()
+        currentWorkId = workId
+        _workManagerState.value = NetworkState.Loading
         _lastApiResult.value = "WorkManager: Scheduled GET Users work"
+        
+        // Observe work result
+        observeWorkResult(workId, "GET Users")
     }
     
     fun scheduleGetPostsWork() {
-        workManagerHelper.scheduleGetPostsWork()
+        val workId = workManagerHelper.scheduleGetPostsWork()
+        currentWorkId = workId
+        _workManagerState.value = NetworkState.Loading
         _lastApiResult.value = "WorkManager: Scheduled GET Posts work"
+        
+        // Observe work result
+        observeWorkResult(workId, "GET Posts")
     }
     
     fun scheduleCreateUserWork(name: String, email: String, phone: String) {
-        workManagerHelper.scheduleCreateUserWork(name, email, phone)
+        val workId = workManagerHelper.scheduleCreateUserWork(name, email, phone)
+        currentWorkId = workId
+        _workManagerState.value = NetworkState.Loading
         _lastApiResult.value = "WorkManager: Scheduled Create User work"
+        
+        // Observe work result
+        observeWorkResult(workId, "Create User")
     }
     
     fun scheduleCreatePostWork(title: String, body: String, userId: Int) {
-        workManagerHelper.scheduleCreatePostWork(title, body, userId)
+        val workId = workManagerHelper.scheduleCreatePostWork(title, body, userId)
+        currentWorkId = workId
+        _workManagerState.value = NetworkState.Loading
         _lastApiResult.value = "WorkManager: Scheduled Create Post work"
+        
+        // Observe work result
+        observeWorkResult(workId, "Create Post")
     }
     
     fun schedulePeriodicSync() {
@@ -220,10 +251,59 @@ class NetworkViewModel @Inject constructor(
         _lastApiResult.value = "WorkManager: Scheduled periodic sync work"
     }
     
+    fun scheduleTestWork() {
+        val workId = workManagerHelper.scheduleTestWork()
+        currentWorkId = workId
+        _workManagerState.value = NetworkState.Loading
+        _lastApiResult.value = "WorkManager: Scheduled test work"
+        
+        // Observe work result
+        observeWorkResult(workId, "Test Work")
+    }
+    
+    // Private method to observe work results
+    private fun observeWorkResult(workId: UUID, operationName: String) {
+        workManagerHelper.observeWorkResultWithData(workId)
+            .onEach { workResult ->
+                when (workResult) {
+                    is WorkResult.Success -> {
+                        _workManagerState.value = NetworkState.Success(workResult.message)
+                        _lastApiResult.value = "WorkManager $operationName: Success - ${workResult.message}"
+                    }
+                    is WorkResult.Error -> {
+                        _workManagerState.value = NetworkState.Error(workResult.message)
+                        _lastApiResult.value = "WorkManager $operationName: Error - ${workResult.message}"
+                    }
+                    is WorkResult.Cancelled -> {
+                        _workManagerState.value = NetworkState.Error("Work cancelled: ${workResult.message}")
+                        _lastApiResult.value = "WorkManager $operationName: Cancelled - ${workResult.message}"
+                    }
+                    is WorkResult.Running -> {
+                        _workManagerState.value = NetworkState.Loading
+                        _lastApiResult.value = "WorkManager $operationName: Running - ${workResult.message}"
+                    }
+                    is WorkResult.Queued -> {
+                        _workManagerState.value = NetworkState.Loading
+                        _lastApiResult.value = "WorkManager $operationName: Queued - ${workResult.message}"
+                    }
+                    is WorkResult.Blocked -> {
+                        _workManagerState.value = NetworkState.Error("Work blocked: ${workResult.message}")
+                        _lastApiResult.value = "WorkManager $operationName: Blocked - ${workResult.message}"
+                    }
+                    is WorkResult.Unknown -> {
+                        _workManagerState.value = NetworkState.Error("Unknown work state: ${workResult.message}")
+                        _lastApiResult.value = "WorkManager $operationName: Unknown - ${workResult.message}"
+                    }
+                }
+            }
+            .launchIn(viewModelScope)
+    }
+    
     // Utility methods
     fun clearResults() {
         _lastApiResult.value = ""
         _uiState.value = NetworkState.Idle
+        _workManagerState.value = NetworkState.Idle
     }
     
     fun resetData() {
@@ -233,5 +313,16 @@ class NetworkViewModel @Inject constructor(
         _selectedPost.value = null
         _lastApiResult.value = ""
         _uiState.value = NetworkState.Idle
+        _workManagerState.value = NetworkState.Idle
+        currentWorkId = null
+    }
+    
+    fun cancelCurrentWork() {
+        currentWorkId?.let { workId ->
+            workManagerHelper.cancelWork(workId)
+            _workManagerState.value = NetworkState.Error("Work cancelled by user")
+            _lastApiResult.value = "WorkManager: Work cancelled"
+            currentWorkId = null
+        }
     }
 }

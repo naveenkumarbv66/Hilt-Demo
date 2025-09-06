@@ -49,6 +49,7 @@ fun NetworkScreen(
     viewModel: NetworkViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val workManagerState by viewModel.workManagerState.collectAsState()
     val users by viewModel.users.collectAsState()
     val posts by viewModel.posts.collectAsState()
     val lastApiResult by viewModel.lastApiResult.collectAsState()
@@ -84,15 +85,19 @@ fun NetworkScreen(
             Column(
                 modifier = Modifier.padding(16.dp)
             ) {
+                // API Status
                 Text(
-                    text = "Status: ${uiState::class.simpleName}",
+                    text = "API Status: ${uiState::class.simpleName}",
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
                 val currentState = uiState
                 when (currentState) {
                     is NetworkState.Loading -> {
-                        CircularProgressIndicator(modifier = Modifier.padding(8.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            CircularProgressIndicator(modifier = Modifier.padding(end = 8.dp), strokeWidth = 2.dp)
+                            Text(text = "Loading...")
+                        }
                     }
                     is NetworkState.Success -> {
                         Text(
@@ -108,6 +113,38 @@ fun NetworkScreen(
                     }
                     is NetworkState.Idle -> {
                         Text(text = "Ready to make API calls")
+                    }
+                }
+                
+                // WorkManager Status
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "WorkManager Status: ${workManagerState::class.simpleName}",
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                val currentWorkState = workManagerState
+                when (currentWorkState) {
+                    is NetworkState.Loading -> {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            CircularProgressIndicator(modifier = Modifier.padding(end = 8.dp), strokeWidth = 2.dp)
+                            Text(text = "WorkManager running...")
+                        }
+                    }
+                    is NetworkState.Success -> {
+                        Text(
+                            text = "✅ WorkManager: ${currentWorkState.message}",
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    is NetworkState.Error -> {
+                        Text(
+                            text = "❌ WorkManager: ${currentWorkState.message}",
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                    is NetworkState.Idle -> {
+                        Text(text = "WorkManager ready")
                     }
                 }
             }
@@ -181,7 +218,10 @@ fun NetworkScreen(
                 onScheduleGetPosts = { viewModel.scheduleGetPostsWork() },
                 onScheduleCreateUser = { name, email, phone -> viewModel.scheduleCreateUserWork(name, email, phone) },
                 onScheduleCreatePost = { title, body, userId -> viewModel.scheduleCreatePostWork(title, body, userId) },
-                onSchedulePeriodicSync = { viewModel.schedulePeriodicSync() }
+                onSchedulePeriodicSync = { viewModel.schedulePeriodicSync() },
+                onScheduleTestWork = { viewModel.scheduleTestWork() },
+                onCancelCurrentWork = { viewModel.cancelCurrentWork() },
+                onClearResults = { viewModel.clearResults() }
             )
         }
         
@@ -488,7 +528,10 @@ fun WorkManagerTab(
     onScheduleGetPosts: () -> Unit,
     onScheduleCreateUser: (String, String, String) -> Unit,
     onScheduleCreatePost: (String, String, Int) -> Unit,
-    onSchedulePeriodicSync: () -> Unit
+    onSchedulePeriodicSync: () -> Unit,
+    onScheduleTestWork: () -> Unit,
+    onCancelCurrentWork: () -> Unit,
+    onClearResults: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -525,6 +568,45 @@ fun WorkManagerTab(
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Schedule Periodic Sync")
+        }
+        
+        Spacer(modifier = Modifier.height(8.dp))
+        
+        Button(
+            onClick = onScheduleTestWork,
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.tertiary
+            )
+        ) {
+            Text("Test Simple Worker (No Dependencies)")
+        }
+        
+        Spacer(modifier = Modifier.height(8.dp))
+        
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Button(
+                onClick = onCancelCurrentWork,
+                modifier = Modifier.weight(1f),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.error
+                )
+            ) {
+                Text("Cancel Work")
+            }
+            
+            Button(
+                onClick = onClearResults,
+                modifier = Modifier.weight(1f),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.secondary
+                )
+            ) {
+                Text("Clear Results")
+            }
         }
         
         Spacer(modifier = Modifier.height(24.dp))
